@@ -26,6 +26,8 @@
 #include <fastdds/dds/topic/TypeSupport.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
+#include <vector>
+
 class HelloWorldPublisher
 {
 public:
@@ -35,7 +37,12 @@ public:
     virtual ~HelloWorldPublisher();
 
     //!Initialize
-    bool init();
+    bool init(
+        size_t pubside_participant_count = 1,
+        size_t pubside_publisher_count = 1,
+        size_t pubside_topic_count = 1,
+        size_t pubside_writer_count = 1
+    );
 
     //!Publish a sample
     bool publish(
@@ -50,13 +57,13 @@ private:
 
     HelloWorld hello_;
 
-    eprosima::fastdds::dds::DomainParticipant* participant_;
+    std::vector<eprosima::fastdds::dds::DomainParticipant*> participant_list_;
 
-    eprosima::fastdds::dds::Publisher* publisher_;
+    std::vector<eprosima::fastdds::dds::Publisher*> publisher_list_;
 
-    eprosima::fastdds::dds::Topic* topic_;
+    std::vector<eprosima::fastdds::dds::Topic*> topic_list_;
 
-    eprosima::fastdds::dds::DataWriter* writer_;
+    std::vector<eprosima::fastdds::dds::DataWriter*> writer_list_;
 
     bool stop_;
 

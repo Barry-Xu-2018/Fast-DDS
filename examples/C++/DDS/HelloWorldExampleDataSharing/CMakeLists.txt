@@ -29,6 +29,9 @@ if(NOT fastrtps_FOUND)
     find_package(fastrtps REQUIRED)
 endif()
 
+find_package(Boost REQUIRED COMPONENTS system program_options)
+include_directories(${Boost_INCLUDE_DIRS})
+
 #Check C++11
 include(CheckCXXCompilerFlag)
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG OR
@@ -46,6 +49,6 @@ file(GLOB DDS_HELLOWORLD_EXAMPLE_DATASHARING_SOURCES_CPP "*.cpp")
 add_executable(DDSHelloWorldExampleDataSharing
     ${DDS_HELLOWORLD_EXAMPLE_DATASHARING_SOURCES_CXX}
     ${DDS_HELLOWORLD_EXAMPLE_DATASHARING_SOURCES_CPP})
-target_link_libraries(DDSHelloWorldExampleDataSharing fastrtps fastcdr)
+target_link_libraries(DDSHelloWorldExampleDataSharing fastrtps fastcdr ${Boost_LIBRARIES})
 install(TARGETS DDSHelloWorldExampleDataSharing
     RUNTIME DESTINATION examples/C++/DDS/HelloWorldExampleDataSharing/${BIN_INSTALL_DIR})

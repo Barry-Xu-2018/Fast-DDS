@@ -29,45 +29,73 @@
 using namespace eprosima::fastdds::dds;
 
 HelloWorldSubscriber::HelloWorldSubscriber()
-    : participant_(nullptr)
-    , subscriber_(nullptr)
-    , topic_(nullptr)
-    , reader_(nullptr)
-    , type_(new HelloWorldPubSubType())
+    : type_(new HelloWorldPubSubType())
 {
 }
 
-bool HelloWorldSubscriber::init()
+bool HelloWorldSubscriber::init(
+    size_t subside_participant_count,
+    size_t subside_subscriber_count,
+    size_t subside_topic_count,
+    size_t subside_reader_count
+)
 {
+    if (subside_participant_count < 1 ||
+        subside_subscriber_count < 1 ||
+        subside_topic_count < 1 ||
+        subside_reader_count < 1) {
+        std::cout << "HelloWorldSubscriber::init parameter error" << std::endl;
+        return false;
+    }
+
     DomainParticipantQos pqos;
-    pqos.name("Participant_sub");
-    participant_ = DomainParticipantFactory::get_instance()->create_participant(0, pqos);
 
-    if (participant_ == nullptr)
-    {
-        return false;
+    for (size_t i = 0; i < subside_participant_count; ++i) {
+        pqos.name("Participant_sub_" + std::to_string(i));
+        auto participant_ = DomainParticipantFactory::get_instance()->create_participant(0, pqos);
+
+        if (participant_ == nullptr)
+        {
+            return false;
+        }
+
+        participant_list_.push_back(participant_);
+
+        //REGISTER THE TYPE
+        type_.register_type(participant_);
     }
 
-    //REGISTER THE TYPE
-    type_.register_type(participant_);
+    for (size_t i = 0; i < subside_subscriber_count; ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
+        //CREATE THE SUBSCRIBER
+        auto subscriber_ = participant_list_[j]->create_subscriber(SUBSCRIBER_QOS_DEFAULT, nullptr);
 
-    //CREATE THE SUBSCRIBER
-    subscriber_ = participant_->create_subscriber(SUBSCRIBER_QOS_DEFAULT, nullptr);
+        if (subscriber_ == nullptr)
+        {
+            return false;
+        }
 
-    if (subscriber_ == nullptr)
-    {
-        return false;
+        subscriber_list_.push_back(subscriber_);
     }
 
-    //CREATE THE TOPIC
-    topic_ = participant_->create_topic(
-        "HelloWorldTopic",
-        "HelloWorld",
-        TOPIC_QOS_DEFAULT);
+    for (size_t i = 0; i < subside_topic_count; ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
 
-    if (topic_ == nullptr)
-    {
-        return false;
+        std::string topic_name = "HelloWorldTopic" + std::to_string(i);
+        auto topic_ = participant_list_[j]->create_topic(topic_name, "HelloWorld", TOPIC_QOS_DEFAULT);
+
+        if (topic_ == nullptr)
+        {
+            return false;
+        }
+
+        topic_list_.push_back(topic_);
     }
 
     // CREATE THE READER
@@ -75,11 +103,26 @@ bool HelloWorldSubscriber::init()
     rqos.reliability().kind = BEST_EFFORT_RELIABILITY_QOS;
     rqos.durability().kind = VOLATILE_DURABILITY_QOS;
     rqos.data_sharing().automatic();
-    reader_ = subscriber_->create_datareader(topic_, rqos, &listener_);
 
-    if (reader_ == nullptr)
-    {
-        return false;
+    for (size_t i = 0; i < subside_reader_count; ++i) {
+        size_t j = i;
+        if (j >= subscriber_list_.size()) {
+            j = subscriber_list_.size()-1;
+        }
+
+        size_t k = i;
+        if (k >= topic_list_.size()) {
+            k = topic_list_.size()-1;
+        }
+
+        auto reader_ = subscriber_list_[j]->create_datareader(topic_list_[k], rqos, &listener_);
+
+        if (reader_ == nullptr)
+        {
+            return false;
+        }
+
+        reader_list_.push_back(reader_);
     }
 
     return true;
@@ -87,19 +130,33 @@ bool HelloWorldSubscriber::init()
 
 HelloWorldSubscriber::~HelloWorldSubscriber()
 {
-    if (reader_ != nullptr)
-    {
-        subscriber_->delete_datareader(reader_);
+    for (size_t i = 0; i < reader_list_.size(); ++i) {
+        size_t j = i;
+        if (j >= subscriber_list_.size()) {
+            j = subscriber_list_.size()-1;
+        }
+        subscriber_list_[j]->delete_datareader(reader_list_[i]);
     }
-    if (topic_ != nullptr)
-    {
-        participant_->delete_topic(topic_);
+
+    for (size_t i = 0; i < subscriber_list_.size(); ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
+        participant_list_[j]->delete_subscriber(subscriber_list_[i]);
     }
-    if (subscriber_ != nullptr)
-    {
-        participant_->delete_subscriber(subscriber_);
+
+    for (size_t i = 0; i < topic_list_.size(); ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
+        participant_list_[j]->delete_topic(topic_list_[i]);
     }
-    DomainParticipantFactory::get_instance()->delete_participant(participant_);
+
+    for (size_t i = 0; i < participant_list_.size(); ++i) {
+        DomainParticipantFactory::get_instance()->delete_participant(participant_list_[i]);
+    }
 }
 
 void HelloWorldSubscriber::SubListener::on_subscription_matched(
@@ -109,12 +166,12 @@ void HelloWorldSubscriber::SubListener::on_subscription_matched(
     if (info.current_count_change == 1)
     {
         matched_ = info.total_count;
-        std::cout << "Subscriber matched." << std::endl;
+        std::cout << "Subscriber: a writer discovered." << std::endl;
     }
     else if (info.current_count_change == -1)
     {
         matched_ = info.total_count;
-        std::cout << "Subscriber unmatched." << std::endl;
+        std::cout << "Subscriber: a writer disappeared." << std::endl;
     }
     else
     {

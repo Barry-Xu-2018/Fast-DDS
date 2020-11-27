@@ -31,74 +31,136 @@
 using namespace eprosima::fastdds::dds;
 
 HelloWorldPublisher::HelloWorldPublisher()
-    : participant_(nullptr)
-    , publisher_(nullptr)
-    , topic_(nullptr)
-    , writer_(nullptr)
-    , type_(new HelloWorldPubSubType())
+    : type_(new HelloWorldPubSubType())
 {
 }
 
-bool HelloWorldPublisher::init()
+bool HelloWorldPublisher::init(
+    size_t pubside_participant_count,
+    size_t pubside_publisher_count,
+    size_t pubside_topic_count,
+    size_t pubside_writer_count
+)
 {
+    if (pubside_participant_count < 1 ||
+        pubside_publisher_count < 1 ||
+        pubside_topic_count < 1 ||
+        pubside_writer_count < 1) {
+        std::cout << "HelloWorldPublisher::init parameter error" << std::endl;
+        return false;
+    }
+
     hello_.index(0);
     hello_.message("HelloWorld");
     DomainParticipantQos pqos;
-    pqos.name("Participant_pub");
-    participant_ = DomainParticipantFactory::get_instance()->create_participant(0, pqos);
 
-    if (participant_ == nullptr)
-    {
-        return false;
+    for (size_t i = 0; i < pubside_participant_count; ++i) {
+        pqos.name("Participant_pub_" + std::to_string(i));
+        auto participant_ = DomainParticipantFactory::get_instance()->create_participant(0, pqos);
+
+        if (participant_ == nullptr)
+        {
+            return false;
+        }
+
+        participant_list_.push_back(participant_);
+
+        //REGISTER THE TYPE
+        type_.register_type(participant_);
     }
 
-    //REGISTER THE TYPE
-    type_.register_type(participant_);
+    for (size_t i = 0; i < pubside_publisher_count; ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
+        //CREATE THE PUBLISHER
+        auto publisher_ = participant_list_[j]->create_publisher(PUBLISHER_QOS_DEFAULT, nullptr);
 
-    //CREATE THE PUBLISHER
-    publisher_ = participant_->create_publisher(PUBLISHER_QOS_DEFAULT, nullptr);
+        if (publisher_ == nullptr)
+        {
+            return false;
+        }
 
-    if (publisher_ == nullptr)
-    {
-        return false;
+        publisher_list_.push_back(publisher_);
     }
 
-    topic_ = participant_->create_topic("HelloWorldTopic", "HelloWorld", TOPIC_QOS_DEFAULT);
+    for (size_t i = 0; i < pubside_topic_count; ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
 
-    if (topic_ == nullptr)
-    {
-        return false;
+        std::string topic_name = "HelloWorldTopic" + std::to_string(i);
+        auto topic_ = participant_list_[j]->create_topic(topic_name, "HelloWorld", TOPIC_QOS_DEFAULT);
+
+        if (topic_ == nullptr)
+        {
+            return false;
+        }
+
+        topic_list_.push_back(topic_);
     }
 
-    // CREATE THE WRITER
     DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
     wqos.reliability().kind = BEST_EFFORT_RELIABILITY_QOS;
     wqos.history().depth = 10;
     wqos.data_sharing().automatic();
-    writer_ = publisher_->create_datawriter(topic_, wqos, &listener_);
 
-    if (writer_ == nullptr)
-    {
-        return false;
+    for (size_t i = 0; i < pubside_writer_count; ++i) {
+        // CREATE THE WRITER
+        size_t j = i;
+        if (j >= publisher_list_.size()) {
+            j = publisher_list_.size()-1;
+        }
+
+        size_t k = i;
+        if (k >= topic_list_.size()) {
+            k = topic_list_.size()-1;
+        }
+
+        auto writer_ = publisher_list_[j]->create_datawriter(topic_list_[k], wqos, &listener_);
+
+        if (writer_ == nullptr)
+        {
+            return false;
+        }
+
+        writer_list_.push_back(writer_);
     }
+
     return true;
 }
 
 HelloWorldPublisher::~HelloWorldPublisher()
 {
-    if (writer_ != nullptr)
-    {
-        publisher_->delete_datawriter(writer_);
+    for (size_t i = 0; i < writer_list_.size(); ++i) {
+        size_t j = i;
+        if (j >= publisher_list_.size()) {
+            j = publisher_list_.size()-1;
+        }
+        publisher_list_[j]->delete_datawriter(writer_list_[i]);
     }
-    if (publisher_ != nullptr)
-    {
-        participant_->delete_publisher(publisher_);
+
+    for (size_t i = 0; i < publisher_list_.size(); ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
+        participant_list_[j]->delete_publisher(publisher_list_[i]);
     }
-    if (topic_ != nullptr)
-    {
-        participant_->delete_topic(topic_);
+
+    for (size_t i = 0; i < topic_list_.size(); ++i) {
+        size_t j = i;
+        if (j >= participant_list_.size()) {
+            j = participant_list_.size()-1;
+        }
+        participant_list_[j]->delete_topic(topic_list_[i]);
     }
-    DomainParticipantFactory::get_instance()->delete_participant(participant_);
+
+    for (size_t i = 0; i < participant_list_.size(); ++i) {
+        DomainParticipantFactory::get_instance()->delete_participant(participant_list_[i]);
+    }
 }
 
 void HelloWorldPublisher::PubListener::on_publication_matched(
@@ -109,12 +171,12 @@ void HelloWorldPublisher::PubListener::on_publication_matched(
     {
         matched_ = info.total_count;
         firstConnected_ = true;
-        std::cout << "Publisher matched." << std::endl;
+        std::cout << "Publisher: a reader discovered." << std::endl;
     }
     else if (info.current_count_change == -1)
     {
         matched_ = info.total_count;
-        std::cout << "Publisher unmatched." << std::endl;
+        std::cout << "Publisher: a reader disappeared." << std::endl;
     }
     else
     {
@@ -182,7 +244,9 @@ bool HelloWorldPublisher::publish(
     if (listener_.firstConnected_ || !waitForListener || listener_.matched_ > 0)
     {
         hello_.index(hello_.index() + 1);
-        writer_->write(&hello_);
+        for (auto writer_: writer_list_) {
+            writer_->write(&hello_);
+        }
         return true;
     }
     return false;

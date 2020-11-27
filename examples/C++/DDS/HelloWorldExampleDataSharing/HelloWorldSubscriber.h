@@ -27,6 +27,8 @@
 #include <fastrtps/subscriber/SampleInfo.h>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 
+#include <vector>
+
 class HelloWorldSubscriber
 {
 public:
@@ -36,7 +38,12 @@ public:
     virtual ~HelloWorldSubscriber();
 
     //!Initialize the subscriber
-    bool init();
+    bool init(
+        size_t subside_participant_count = 1,
+        size_t subside_subscriber_count = 1,
+        size_t subside_topic_count = 1,
+        size_t subside_reader_count = 1
+    );
 
     //!RUN the subscriber
     void run();
@@ -47,13 +54,13 @@ public:
 
 private:
 
-    eprosima::fastdds::dds::DomainParticipant* participant_;
+    std::vector<eprosima::fastdds::dds::DomainParticipant*> participant_list_;
 
-    eprosima::fastdds::dds::Subscriber* subscriber_;
+    std::vector<eprosima::fastdds::dds::Subscriber*> subscriber_list_;
 
-    eprosima::fastdds::dds::Topic* topic_;
+    std::vector<eprosima::fastdds::dds::Topic*> topic_list_;
 
-    eprosima::fastdds::dds::DataReader* reader_;
+    std::vector<eprosima::fastdds::dds::DataReader*> reader_list_;
 
     eprosima::fastdds::dds::TypeSupport type_;
 
