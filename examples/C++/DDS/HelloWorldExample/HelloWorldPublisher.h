@@ -56,7 +56,7 @@ private:
 
     eprosima::fastdds::dds::Topic* topic_;
 
-    eprosima::fastdds::dds::DataWriter* writer_;
+    eprosima::fastdds::dds::DataWriter* writer_[100];
 
     bool stop_;
 

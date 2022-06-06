@@ -34,7 +34,7 @@ HelloWorldPublisher::HelloWorldPublisher()
     : participant_(nullptr)
     , publisher_(nullptr)
     , topic_(nullptr)
-    , writer_(nullptr)
+    , writer_{nullptr}
     , type_(new HelloWorldPubSubType())
 {
 }
@@ -71,21 +71,33 @@ bool HelloWorldPublisher::init()
     }
 
     // CREATE THE WRITER
-    writer_ = publisher_->create_datawriter(topic_, DATAWRITER_QOS_DEFAULT, &listener_);
+    for (int i=0; i < 100; i++) {
+        writer_[i] = publisher_->create_datawriter(topic_, DATAWRITER_QOS_DEFAULT, &listener_);
 
-    if (writer_ == nullptr)
-    {
-        return false;
+        if (writer_[i] == nullptr)
+        {
+            return false;
+        }
     }
+
     return true;
 }
 
 HelloWorldPublisher::~HelloWorldPublisher()
 {
+#if 0
     if (writer_ != nullptr)
     {
         publisher_->delete_datawriter(writer_);
     }
+#else
+    for (int i=0; i < 100; i++) {
+        if (writer_[i] != nullptr)
+        {
+            publisher_->delete_datawriter(writer_[i]);
+        }
+    }
+#endif
     if (publisher_ != nullptr)
     {
         participant_->delete_publisher(publisher_);
@@ -123,6 +135,7 @@ void HelloWorldPublisher::runThread(
         uint32_t samples,
         uint32_t sleep)
 {
+#if 0
     if (samples == 0)
     {
         while (!stop_)
@@ -151,6 +164,9 @@ void HelloWorldPublisher::runThread(
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
         }
     }
+#else
+    std::this_thread::sleep_for(std::chrono::seconds(120));
+#endif
 }
 
 void HelloWorldPublisher::run(
@@ -178,7 +194,7 @@ bool HelloWorldPublisher::publish(
     if (listener_.firstConnected_ || !waitForListener || listener_.matched_ > 0)
     {
         hello_.index(hello_.index() + 1);
-        writer_->write(&hello_);
+        writer_[0]->write(&hello_);
         return true;
     }
     return false;

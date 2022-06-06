@@ -53,7 +53,7 @@ private:
 
     eprosima::fastdds::dds::Topic* topic_;
 
-    eprosima::fastdds::dds::DataReader* reader_;
+    eprosima::fastdds::dds::DataReader* reader_[100];
 
     eprosima::fastdds::dds::TypeSupport type_;
 

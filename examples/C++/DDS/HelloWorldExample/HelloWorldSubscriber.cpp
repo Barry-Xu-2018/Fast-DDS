@@ -32,7 +32,7 @@ HelloWorldSubscriber::HelloWorldSubscriber()
     : participant_(nullptr)
     , subscriber_(nullptr)
     , topic_(nullptr)
-    , reader_(nullptr)
+    , reader_{nullptr}
     , type_(new HelloWorldPubSubType())
 {
 }
@@ -73,11 +73,14 @@ bool HelloWorldSubscriber::init()
     // CREATE THE READER
     DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
     rqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
-    reader_ = subscriber_->create_datareader(topic_, rqos, &listener_);
 
-    if (reader_ == nullptr)
-    {
-        return false;
+    for(int i=0; i < 100; i++) {
+        reader_[i] = subscriber_->create_datareader(topic_, rqos, &listener_);
+
+        if (reader_[i] == nullptr)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -85,10 +88,19 @@ bool HelloWorldSubscriber::init()
 
 HelloWorldSubscriber::~HelloWorldSubscriber()
 {
+#if 0
     if (reader_ != nullptr)
     {
         subscriber_->delete_datareader(reader_);
     }
+#else
+    for(int i=0; i < 100; i++) {
+        if (reader_[i] != nullptr)
+        {
+            subscriber_->delete_datareader(reader_[i]);
+        }
+    }
+#endif
     if (topic_ != nullptr)
     {
         participant_->delete_topic(topic_);
