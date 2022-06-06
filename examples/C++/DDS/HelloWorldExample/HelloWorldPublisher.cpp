@@ -151,6 +151,7 @@ void HelloWorldPublisher::runThread(
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
         }
     }
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 }
 
 void HelloWorldPublisher::run(

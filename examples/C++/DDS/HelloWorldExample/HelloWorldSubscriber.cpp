@@ -132,6 +132,9 @@ void HelloWorldSubscriber::SubListener::on_data_available(
             samples_++;
             // Print your structure data here.
             std::cout << "Message " << hello_.message() << " " << hello_.index() << " RECEIVED" << std::endl;
+            if (samples_ != hello_.index()) {
+                std::cout << "++++++" << samples_ << " != " << hello_.index() << std::endl;
+            }
         }
     }
 }
