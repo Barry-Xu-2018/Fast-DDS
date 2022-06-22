@@ -141,7 +141,7 @@ void HelloWorldSubscriber::SubListener::on_subscription_matched(
     else if (info.current_count_change == -1)
     {
         matched_ = info.total_count;
-        std::cout << "Subscriber unmatched." << std::endl;
+        std::cout << "Subscriber unmatched. Num samples = " << samples_ << std::endl;
     }
     else
     {
@@ -155,9 +155,9 @@ void HelloWorldSubscriber::SubListener::on_data_available(
 {
     SampleInfo info;
     static int64_t prev_id = -1;
-    if (reader->take_next_sample(&hello_, &info) == ReturnCode_t::RETCODE_OK)
+    while (reader->take_next_sample(&hello_, &info) == ReturnCode_t::RETCODE_OK)
     {
-        if (info.instance_state == ALIVE_INSTANCE_STATE)
+        if (info.valid_data)
         {
             samples_++;
             // Print your structure data here.
