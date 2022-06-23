@@ -168,8 +168,8 @@ struct ReadTakeCommand
                     if (remove_change || (added && take_samples))
                     {
                         // Remove from history
+                        printf("[Fast-DDS][add_instance] remove_change_sub : seq_no = %ld\n", change->sequenceNumber.to64long());
                         history_.remove_change_sub(change, it);
-
                         // Current iterator will point to change next to the one removed. Avoid incrementing.
                         continue;
                     }

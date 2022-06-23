@@ -1088,6 +1088,7 @@ void StatefulReader::NotifyChanges(
     while (nextChangeToNotify != SequenceNumber_t::unknown())
     {
         CacheChange_t* ch_to_give = nullptr;
+        std::cout << "[Fast-DDS][NotifyChanges] start to get change GUID " << proxGUID << " : seq_no = " << nextChangeToNotify.to64long() << std::endl;
 
         if (mp_history->get_change(nextChangeToNotify, proxGUID, &ch_to_give))
         {

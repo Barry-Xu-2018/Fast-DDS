@@ -154,23 +154,27 @@ void HelloWorldSubscriber::SubListener::on_data_available(
         DataReader* reader)
 {
     SampleInfo info;
-    static int64_t prev_id = -1;
+    //static int64_t prev_id = -1;
     while (reader->take_next_sample(&hello_, &info) == ReturnCode_t::RETCODE_OK)
     {
         if (info.valid_data)
         {
             samples_++;
             // Print your structure data here.
+#if 0
             if (prev_id == -1) {
               prev_id = hello_.id();
               std::cout << "id:" << hello_.id() << ", index:" << hello_.index() << " RECEIVED" << std::endl;
-			} else if ((prev_id + 1) == hello_.id()) {
+						} else if ((prev_id + 1) == hello_.id()) {
               prev_id++;
             	std::cout << "id:" << hello_.id() << ", index:" << hello_.index() << " RECEIVED" << std::endl;
             } else {
               prev_id++;
             	std::cout << "+++ Fail: id:" << hello_.id() << ", index:" << hello_.index() << " RECEIVED" << std::endl;
             }
+#else
+            std::cout << "id:" << hello_.id() << ", index:" << hello_.index() << " RECEIVED" << std::endl;
+#endif
         }
     }
 }
