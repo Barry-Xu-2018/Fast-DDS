@@ -82,11 +82,14 @@ void StatusConditionImpl::set_status(
             bool old_trigger = (mask_ & status_).any();
             status_ |= status;
             bool new_trigger = (mask_ & status_).any();
+            /*std::printf("old_trigger: %s, new_trigger: %s\n",
+            old_trigger ? "true": "false", new_trigger? "true": "false");*/
             notify = !old_trigger && new_trigger;
         }
 
         if (notify)
         {
+            std::printf("trigger\n");
             notifier_->notify();
         }
     }
