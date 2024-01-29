@@ -25,10 +25,15 @@
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
+#include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
+
+#include <fastrtps/utils/IPLocator.h>
 
 #include <thread>
 
 using namespace eprosima::fastdds::dds;
+using namespace eprosima::fastrtps::rtps;
+using namespace eprosima::fastdds::rtps;
 
 HelloWorldPublisher::HelloWorldPublisher()
     : participant_(nullptr)
@@ -44,8 +49,30 @@ bool HelloWorldPublisher::init(
 {
     hello_.index(0);
     hello_.message("HelloWorld");
+
+    RemoteServerAttributes ratt;
+    ratt.ReadguidPrefix("44.53.00.5f.45.50.52.4f.53.49.4d.41");
+
+    eprosima::fastdds::rtps::Locator server_address;
+    server_address.kind = LOCATOR_KIND_UDPv4;
+    server_address.port = 11811;
+    IPLocator::setIPv4(server_address, 127, 0, 0, 1);
+    ratt.metatrafficUnicastLocatorList.push_back(server_address);
+
     DomainParticipantQos pqos = PARTICIPANT_QOS_DEFAULT;
     pqos.name("Participant_pub");
+
+    pqos.wire_protocol().builtin.discovery_config.m_DiscoveryServers.push_back(ratt);
+    pqos.wire_protocol().builtin.discovery_config.discoveryProtocol = DiscoveryProtocol_t::CLIENT;
+    //pqos.wire_protocol().builtin.discovery_config.leaseDuration = eprosima::fastrtps::c_TimeInfinite;
+
+    pqos.wire_protocol().builtin.discovery_config.leaseDuration = eprosima::fastrtps::Duration_t(180, 0);
+    pqos.wire_protocol().builtin.discovery_config.leaseDuration_announcementperiod = eprosima::fastrtps::Duration_t(120, 0);
+    pqos.wire_protocol().builtin.mutation_tries = 300;
+    auto transport = std::make_shared<eprosima::fastdds::rtps::UDPv4TransportDescriptor>();
+    transport->TTL = 64;
+    pqos.transport().user_transports.push_back(transport);
+    pqos.transport().use_builtin_transports = false;
     auto factory = DomainParticipantFactory::get_instance();
 
     if (use_env)
@@ -167,11 +194,13 @@ void HelloWorldPublisher::runThread(
     {
         while (!stop_)
         {
+            #if 0
             if (publish(false))
             {
                 std::cout << "Message: " << hello_.message() << " with index: " << hello_.index()
                           << " SENT" << std::endl;
             }
+            #endif
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
         }
     }
@@ -179,6 +208,7 @@ void HelloWorldPublisher::runThread(
     {
         for (uint32_t i = 0; i < samples; ++i)
         {
+            #if 0
             if (!publish())
             {
                 --i;
@@ -188,6 +218,7 @@ void HelloWorldPublisher::runThread(
                 std::cout << "Message: " << hello_.message() << " with index: " << hello_.index()
                           << " SENT" << std::endl;
             }
+            #endif
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
         }
     }
@@ -203,6 +234,8 @@ void HelloWorldPublisher::run(
     {
         std::cout << "Publisher running. Please press enter to stop the Publisher at any time." << std::endl;
         std::cin.ignore();
+        std::cout << "Publisher running. Stop after 10 minutes." << std::endl;
+        std::this_thread::sleep_for(std::chrono::minutes(10));
         stop_ = true;
     }
     else
@@ -210,6 +243,7 @@ void HelloWorldPublisher::run(
         std::cout << "Publisher running " << samples << " samples." << std::endl;
     }
     thread.join();
+    std::cout << "Stopped" << std::endl;
 }
 
 bool HelloWorldPublisher::publish(

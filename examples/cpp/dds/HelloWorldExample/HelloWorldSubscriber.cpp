@@ -25,8 +25,13 @@
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
+
+#include <fastrtps/utils/IPLocator.h>
 
 using namespace eprosima::fastdds::dds;
+using namespace eprosima::fastrtps::rtps;
+using namespace eprosima::fastdds::rtps;
 
 HelloWorldSubscriber::HelloWorldSubscriber()
     : participant_(nullptr)
@@ -40,8 +45,30 @@ HelloWorldSubscriber::HelloWorldSubscriber()
 bool HelloWorldSubscriber::init(
         bool use_env)
 {
+
+    RemoteServerAttributes ratt;
+    ratt.ReadguidPrefix("44.53.00.5f.45.50.52.4f.53.49.4d.41");
+
+    eprosima::fastdds::rtps::Locator server_address;
+    server_address.kind = LOCATOR_KIND_UDPv4;
+    server_address.port = 11811;
+    IPLocator::setIPv4(server_address, 127, 0, 0, 1);
+    ratt.metatrafficUnicastLocatorList.push_back(server_address);
+
     DomainParticipantQos pqos = PARTICIPANT_QOS_DEFAULT;
     pqos.name("Participant_sub");
+
+    pqos.wire_protocol().builtin.discovery_config.m_DiscoveryServers.push_back(ratt);
+    pqos.wire_protocol().builtin.discovery_config.discoveryProtocol = DiscoveryProtocol_t::CLIENT;
+    //pqos.wire_protocol().builtin.discovery_config.leaseDuration = eprosima::fastrtps::c_TimeInfinite;
+
+    pqos.wire_protocol().builtin.discovery_config.leaseDuration = eprosima::fastrtps::Duration_t(180, 0);
+    pqos.wire_protocol().builtin.discovery_config.leaseDuration_announcementperiod = eprosima::fastrtps::Duration_t(120, 0);
+    pqos.wire_protocol().builtin.mutation_tries = 300;
+    auto transport = std::make_shared<eprosima::fastdds::rtps::UDPv4TransportDescriptor>();
+    transport->TTL = 64;
+    pqos.transport().user_transports.push_back(transport);
+    pqos.transport().use_builtin_transports = false;
     auto factory = DomainParticipantFactory::get_instance();
 
     if (use_env)
@@ -136,7 +163,7 @@ void HelloWorldSubscriber::SubListener::on_subscription_matched(
     if (info.current_count_change == 1)
     {
         matched_ = info.total_count;
-        std::cout << "Subscriber matched." << std::endl;
+        std::cout << "Subscriber matched. Total: " << info.total_count << " , current: " <<  info.current_count << std::endl;
     }
     else if (info.current_count_change == -1)
     {
