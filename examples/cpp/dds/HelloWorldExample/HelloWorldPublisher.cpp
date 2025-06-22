@@ -90,7 +90,7 @@ bool HelloWorldPublisher::init(
     }
 
     topic_ = participant_->create_topic(
-        "HelloWorldTopic",
+        "HelloWorldTopic_0",
         "HelloWorld",
         tqos);
 

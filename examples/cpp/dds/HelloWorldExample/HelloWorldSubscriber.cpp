@@ -35,8 +35,6 @@ using namespace eprosima::fastdds::dds;
 HelloWorldSubscriber::HelloWorldSubscriber()
     : participant_(nullptr)
     , subscriber_(nullptr)
-    , topic_(nullptr)
-    , reader_(nullptr)
     , type_(new HelloWorldPubSubType())
 {
 }
@@ -87,14 +85,15 @@ bool HelloWorldSubscriber::init(
         participant_->get_default_topic_qos(tqos);
     }
 
-    topic_ = participant_->create_topic(
-        "HelloWorldTopic",
-        "HelloWorld",
-        tqos);
-
-    if (topic_ == nullptr)
+    for (int i = 0; i < 20; ++i)
     {
-        return false;
+        std::string topic_name = "HelloWorldTopic_" + std::to_string(i);
+        topic_[i] = participant_->create_topic(topic_name, "HelloWorld", tqos);
+
+        if (topic_[i] == nullptr)
+        {
+            return false;
+        }
     }
 
     // CREATE THE READER
@@ -106,11 +105,14 @@ bool HelloWorldSubscriber::init(
         subscriber_->get_default_datareader_qos(rqos);
     }
 
-    reader_ = subscriber_->create_datareader(topic_, rqos, &listener_);
-
-    if (reader_ == nullptr)
+    for (int i = 0; i < 20; ++i)
     {
-        return false;
+        reader_[i] = subscriber_->create_datareader(topic_[i], rqos, &listener_);
+
+        if (reader_[i] == nullptr)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -118,14 +120,18 @@ bool HelloWorldSubscriber::init(
 
 HelloWorldSubscriber::~HelloWorldSubscriber()
 {
-    if (reader_ != nullptr)
+    for (int i = 0; i < 20; ++i)
     {
-        subscriber_->delete_datareader(reader_);
+        if (reader_[i] != nullptr)
+        {
+            subscriber_->delete_datareader(reader_[i]);
+        }
+        if (topic_[i] != nullptr)
+        {
+            participant_->delete_topic(topic_[i]);
+        }
     }
-    if (topic_ != nullptr)
-    {
-        participant_->delete_topic(topic_);
-    }
+
     if (subscriber_ != nullptr)
     {
         participant_->delete_subscriber(subscriber_);

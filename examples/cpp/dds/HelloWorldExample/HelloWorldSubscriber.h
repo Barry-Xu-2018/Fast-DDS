@@ -52,9 +52,9 @@ private:
 
     eprosima::fastdds::dds::Subscriber* subscriber_;
 
-    eprosima::fastdds::dds::Topic* topic_;
+    eprosima::fastdds::dds::Topic* topic_[20];
 
-    eprosima::fastdds::dds::DataReader* reader_;
+    eprosima::fastdds::dds::DataReader* reader_[20];
 
     eprosima::fastdds::dds::TypeSupport type_;
 
