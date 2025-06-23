@@ -16,7 +16,7 @@
                 </domains>
                 <publish>
                     <topics>
-                        <topic>HelloWorldTopic</topic>
+                        <topic>HelloWorldTopic_*</topic>
                     </topics>
                 </publish>
             </allow_rule>
@@ -37,7 +37,7 @@
                 </domains>
                 <subscribe>
                     <topics>
-                        <topic>HelloWorldTopic</topic>
+                        <topic>HelloWorldTopic_*</topic>
                     </topics>
                 </subscribe>
             </allow_rule>

@@ -82,7 +82,7 @@ bool HelloWorldSubscriber::init()
     }
 
     //CREATE THE TOPIC
-    topic_ = participant_->create_topic("HelloWorldTopic", "HelloWorld", TOPIC_QOS_DEFAULT);
+    topic_ = participant_->create_topic("HelloWorldTopic_0", "HelloWorld", TOPIC_QOS_DEFAULT);
     //CREATE THE DATAREADER
     DataReaderQos rqos;
     rqos.history().kind = KEEP_LAST_HISTORY_QOS;

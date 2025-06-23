@@ -57,7 +57,7 @@ int main(
             HelloWorldPublisher mypub;
             if (mypub.init())
             {
-                mypub.run(10);
+                mypub.run(1);
             }
             break;
         }
