@@ -26,8 +26,6 @@ using namespace eprosima::fastdds::dds;
 HelloWorldPublisher::HelloWorldPublisher()
     : participant_(nullptr)
     , publisher_(nullptr)
-    , topic_(nullptr)
-    , writer_(nullptr)
     , type_(new HelloWorldPubSubType())
 {
 }
@@ -77,11 +75,12 @@ bool HelloWorldPublisher::init()
     }
 
     //CREATE THE TOPIC
-    topic_ = participant_->create_topic("HelloWorldTopic", "HelloWorld", TOPIC_QOS_DEFAULT);
-
-    if (topic_ == nullptr)
-    {
-        return false;
+    for (int i = 0; i < 20; ++i) {
+        topic_[i] = participant_->create_topic("HelloWorldTopic_" + std::to_string(i), "HelloWorld", TOPIC_QOS_DEFAULT);
+        if (topic_[i] == nullptr)
+        {
+            return false;
+        }
     }
 
     //CREATE THE DATAWRITER
@@ -93,11 +92,14 @@ bool HelloWorldPublisher::init()
     wqos.resource_limits().max_samples_per_instance = 20;
     wqos.reliable_writer_qos().times.heartbeatPeriod.seconds = 2;
     wqos.reliable_writer_qos().times.heartbeatPeriod.nanosec = 200 * 1000 * 1000;
-    writer_ = publisher_->create_datawriter(topic_, wqos, &listener_);
 
-    if (writer_ == nullptr)
-    {
-        return false;
+    for (int i = 0; i < 20; ++i) {
+        writer_[i] = publisher_->create_datawriter(topic_[i], wqos, &listener_);
+
+        if (writer_[i] == nullptr)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -106,17 +108,21 @@ bool HelloWorldPublisher::init()
 
 HelloWorldPublisher::~HelloWorldPublisher()
 {
-    if (writer_ != nullptr)
-    {
-        publisher_->delete_datawriter(writer_);
+    for (int i = 0; i < 20; ++i) {
+        if (writer_[i] != nullptr)
+        {
+            publisher_->delete_datawriter(writer_[i]);
+        }
     }
     if (publisher_ != nullptr)
     {
         participant_->delete_publisher(publisher_);
     }
-    if (topic_ != nullptr)
-    {
-        participant_->delete_topic(topic_);
+    for (int i = 0; i < 20; ++i) {
+        if (topic_[i] != nullptr)
+        {
+            participant_->delete_topic(topic_[i]);
+        }
     }
     DomainParticipantFactory::get_instance()->delete_participant(participant_);
 }
@@ -164,7 +170,7 @@ bool HelloWorldPublisher::publish()
     if (listener_.matched_ > 0 || listener_.first_connected_)
     {
         hello_.index(hello_.index() + 1);
-        writer_->write(&hello_);
+        writer_[0]->write(&hello_);
         return true;
     }
     return false;

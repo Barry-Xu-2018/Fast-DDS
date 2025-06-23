@@ -57,9 +57,9 @@ private:
 
     eprosima::fastdds::dds::Publisher* publisher_;
 
-    eprosima::fastdds::dds::Topic* topic_;
+    eprosima::fastdds::dds::Topic* topic_[20] = {};
 
-    eprosima::fastdds::dds::DataWriter* writer_;
+    eprosima::fastdds::dds::DataWriter* writer_[20] = {};
 
     class PubListener : public eprosima::fastdds::dds::DataWriterListener
     {
