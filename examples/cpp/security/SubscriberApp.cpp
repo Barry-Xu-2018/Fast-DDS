@@ -77,7 +77,7 @@ SubscriberApp::SubscriberApp(
     // Create the topic
     TopicQos topic_qos = TOPIC_QOS_DEFAULT;
     participant_->get_default_topic_qos(topic_qos);
-    topic_ = participant_->create_topic(topic_name, type_.get_type_name(), topic_qos);
+    topic_ = participant_->create_topic(topic_name + "_0", type_.get_type_name(), topic_qos);
     if (topic_ == nullptr)
     {
         throw std::runtime_error("Topic initialization failed");

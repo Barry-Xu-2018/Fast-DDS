@@ -42,8 +42,6 @@ PublisherApp::PublisherApp(
         const std::string& topic_name)
     : participant_(nullptr)
     , publisher_(nullptr)
-    , topic_(nullptr)
-    , writer_(nullptr)
     , type_(new HelloWorldPubSubType())
     , period_ms_(config.interval)
     , matched_(0)
@@ -77,19 +75,27 @@ PublisherApp::PublisherApp(
     // Create the topic
     TopicQos topic_qos = TOPIC_QOS_DEFAULT;
     participant_->get_default_topic_qos(topic_qos);
-    topic_ = participant_->create_topic(topic_name, type_.get_type_name(), topic_qos);
-    if (topic_ == nullptr)
+
+    for (int i = 0; i < 20; ++i)
     {
-        throw std::runtime_error("Topic initialization failed");
+        topic_[i] = participant_->create_topic(topic_name + "_" + std::to_string(i), type_.get_type_name(), topic_qos);
+        if (topic_[i] == nullptr)
+        {
+            throw std::runtime_error("Topic initialization failed");
+        }
     }
 
     // Create the data writer
     DataWriterQos writer_qos = DATAWRITER_QOS_DEFAULT;
     publisher_->get_default_datawriter_qos(writer_qos);
-    writer_ = publisher_->create_datawriter(topic_, writer_qos, this, StatusMask::all());
-    if (writer_ == nullptr)
+
+    for (int i = 0; i < 20; ++i)
     {
-        throw std::runtime_error("DataWriter initialization failed");
+        writer_[i] = publisher_->create_datawriter(topic_[i], writer_qos, this, StatusMask::all());
+        if (writer_[i] == nullptr)
+        {
+            throw std::runtime_error("DataWriter initialization failed");
+        }
     }
 }
 
@@ -159,7 +165,7 @@ bool PublisherApp::publish()
     if (!is_stopped())
     {
         hello_.index(hello_.index() + 1);
-        ret = (writer_->write(&hello_) == RETCODE_OK) ? true : false;
+        ret = (writer_[0]->write(&hello_) == RETCODE_OK) ? true : false;
     }
     return ret;
 }

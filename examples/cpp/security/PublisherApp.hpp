@@ -72,9 +72,9 @@ private:
 
     Publisher* publisher_;
 
-    Topic* topic_;
+    Topic* topic_[20] = {};
 
-    DataWriter* writer_;
+    DataWriter* writer_[20] = {};
 
     TypeSupport type_;
 
