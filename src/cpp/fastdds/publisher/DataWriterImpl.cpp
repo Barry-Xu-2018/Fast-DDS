@@ -22,6 +22,7 @@
 
 #include <functional>
 #include <iostream>
+#include <chrono>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/log/Log.hpp>
@@ -1326,6 +1327,10 @@ void DataWriterImpl::InnerDataWriterListener::on_reader_discovery(
                 break;
 
             case fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERY_STATUS::DISCOVERED_READER:
+            {
+                auto now = std::chrono::system_clock::now();
+                std::cout << ">>>>>> " << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << " Discovered reader: " << reader_guid << std::endl;
+            }
             case fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERY_STATUS::CHANGED_QOS_READER:
                 data_writer_->process_reader_filter_info(reader_guid, *reader_info);
                 break;
